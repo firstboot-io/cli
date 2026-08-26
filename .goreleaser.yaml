@@ -1,0 +1,64 @@
+# Distribution: one static binary, three ways to get it.
+#
+# The plan called this out as roughly a week of the CLI's effort and it is not
+# padding. A CLI nobody can install is a CLI nobody uses, and "download a binary
+# and put it on your PATH" loses most people before they have run it once.
+version: 2
+
+project_name: firstboot
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: firstboot
+    main: .
+    binary: firstboot
+    env:
+      # No cgo, so the binary runs on any glibc and inside a scratch container.
+      # The keyring is reached through D-Bus and the Security framework rather
+      # than through a C library, which is what makes that possible.
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files: [README.md, LICENSE]
+
+# .deb and .rpm, because a server that runs this in CI installs software with a
+# package manager rather than by unpacking a tarball into /usr/local.
+nfpms:
+  - id: firstboot
+    package_name: firstboot
+    formats: [deb, rpm]
+    maintainer: Firstboot <support@firstboot.io> # check-brand:allow package metadata
+    description: Manage Firstboot cloud resources from the terminal
+    license: MIT
+    bindir: /usr/bin
+
+brews:
+  - name: firstboot
+    repository:
+      owner: firstboot-io
+      name: homebrew-tap
+    directory: Formula
+    homepage: https://firstboot.io # check-brand:allow package metadata
+    description: Manage Firstboot cloud resources from the terminal
+    install: |
+      bin.install "firstboot"
+      generate_completions_from_executable(bin/"firstboot", "completion")
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  filters:
+    exclude: ['^docs:', '^test:', '^chore:']

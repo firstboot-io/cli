@@ -1,0 +1,65 @@
+name: go
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  schedule:
+    # The confirmation set is a copy of the platform's `destroy` scope table and
+    # nothing here watches it. A daily run turns "the API made something
+    # irreversible" into a failing build rather than into a delete nobody was
+    # asked about.
+    - cron: '0 8 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {path: firstboot-cli}
+      - uses: actions/checkout@v4
+        with:
+          repository: firstboot-io/firstboot-go
+          path: firstboot-go
+          token: ${{ secrets.SDK_READ_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          repository: firstboot-io/platform
+          path: platform
+          token: ${{ secrets.PLATFORM_READ_TOKEN }}
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25', check-latest: true}
+      - working-directory: firstboot-cli
+        run: go build ./...
+      - working-directory: firstboot-cli
+        run: go vet ./...
+      - working-directory: firstboot-cli
+        run: go test -race ./...
+      # A skipped scope test passes, and a suite that checked nothing is exactly
+      # the failure this test exists to prevent.
+      - name: the confirmation test actually ran
+        working-directory: firstboot-cli
+        run: |
+          out=$(go test -run 'TestConfirmationSetMatchesTheDestroyScope' -v ./internal/cli/ 2>&1)
+          echo "$out"
+          if echo "$out" | grep -q -- '--- SKIP'; then
+            echo "::error::the confirmation test skipped; the platform checkout was missing"
+            exit 1
+          fi
+      - name: gofmt
+        working-directory: firstboot-cli
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "not gofmt-clean:"; echo "$out"; exit 1; fi
+      # Every supported target, because a CLI that does not build for Windows is
+      # discovered by a person on Windows rather than by CI.
+      - name: cross-compile
+        working-directory: firstboot-cli
+        run: |
+          for t in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; do
+            GOOS=${t%/*} GOARCH=${t#*/} CGO_ENABLED=0 go build -o /dev/null . || exit 1
+          done
