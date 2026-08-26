@@ -158,3 +158,7 @@ skip happened.
 ## Requirements
 
 Go 1.25 or newer to build. The released binaries are static and need nothing.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
