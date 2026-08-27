@@ -26,6 +26,18 @@ firstboot server power stop web-1 web-2 web-3
 firstboot server list --state other
 ```
 
+Tags are what make bulk work address a SET rather than a list of names. Every
+list command takes `--tag`, repeated to narrow:
+
+```
+firstboot server list --tag env:prod --tag role:web
+firstboot tag set server web-1 env:prod role:web
+firstboot tag list
+```
+
+`tag set` REPLACES the whole set, which is what the endpoint does; listing no
+tags clears them.
+
 **Piping.** `--output json` hands the API's own body to jq, a script or a CI
 step. It is the API's body rather than a re-shaped one on purpose: a second
 schema is a second thing to drift.

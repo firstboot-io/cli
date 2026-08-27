@@ -90,6 +90,7 @@ func serverListCmd(env *Env) *cobra.Command {
 		search  string
 		state   string
 		project string
+		tags    []string
 		limit   int
 	)
 	cmd := &cobra.Command{
@@ -128,6 +129,9 @@ to jq, a script or a CI step.
 			if project != "" {
 				opts = append(opts, firstboot.ServersInProject(project))
 			}
+			if len(tags) > 0 {
+				opts = append(opts, firstboot.ServersWithTags(tags...))
+			}
 
 			var out []fbapi.ServerBody
 			for srv, err := range env.Client.Servers(ctx, opts...) {
@@ -161,6 +165,8 @@ to jq, a script or a CI step.
 	f.StringVar(&search, "search", "", "match a name, IP address or image, partially")
 	f.StringVar(&state, "state", "", "running, stopped or other")
 	f.StringVar(&project, "project", "", "only servers in this project, or `none`")
+	f.StringArrayVar(&tags, "tag", nil,
+		"only servers carrying this tag; repeat the flag to require several")
 	f.IntVar(&limit, "limit", 0, "stop after this many")
 	return cmd
 }

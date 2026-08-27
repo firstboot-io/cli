@@ -235,6 +235,8 @@ func catalogCmd(env *Env) *cobra.Command {
 func databaseCmd(env *Env) *cobra.Command {
 	cmd := &cobra.Command{Use: "db", Aliases: []string{"database", "databases"}, Short: "Managed databases"}
 
+	var dbTags []string
+	var dbProject string
 	list := &cobra.Command{
 		Use: "list", Aliases: []string{"ls"}, Short: "List database instances", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -243,8 +245,15 @@ func databaseCmd(env *Env) *cobra.Command {
 			}
 			ctx, cancel := env.ctxWithTimeout(cmd.Context())
 			defer cancel()
+			var dbOpts []firstboot.DatabaseListOption
+			if len(dbTags) > 0 {
+				dbOpts = append(dbOpts, firstboot.DatabasesWithTags(dbTags...))
+			}
+			if dbProject != "" {
+				dbOpts = append(dbOpts, firstboot.DatabasesInProject(dbProject))
+			}
 			var out []fbapi.DatabaseBody
-			for db, err := range env.Client.Databases(ctx) {
+			for db, err := range env.Client.Databases(ctx, dbOpts...) {
 				if err != nil {
 					return classifyAPIError("Listing databases", err)
 				}
@@ -302,6 +311,7 @@ func databaseCmd(env *Env) *cobra.Command {
 			})
 		},
 	}
+	addGroupingFlags(list, &dbTags, &dbProject, "database instances")
 	cmd.AddCommand(list, get, deleteCmd(env, deleteSpec{
 		kind: "database", operation: "databaseDelete",
 		extra: "The data is not recoverable.",
@@ -330,6 +340,8 @@ func databaseCmd(env *Env) *cobra.Command {
 
 func volumeCmd(env *Env) *cobra.Command {
 	cmd := &cobra.Command{Use: "volume", Aliases: []string{"volumes", "vol"}, Short: "Block storage volumes"}
+	var volTags []string
+	var volProject string
 	list := &cobra.Command{
 		Use: "list", Aliases: []string{"ls"}, Short: "List volumes", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -338,8 +350,15 @@ func volumeCmd(env *Env) *cobra.Command {
 			}
 			ctx, cancel := env.ctxWithTimeout(cmd.Context())
 			defer cancel()
+			var volOpts []firstboot.VolumeListOption
+			if len(volTags) > 0 {
+				volOpts = append(volOpts, firstboot.VolumesWithTags(volTags...))
+			}
+			if volProject != "" {
+				volOpts = append(volOpts, firstboot.VolumesInProject(volProject))
+			}
 			var out []fbapi.VolumeBody
-			for v, err := range env.Client.Volumes(ctx) {
+			for v, err := range env.Client.Volumes(ctx, volOpts...) {
 				if err != nil {
 					return classifyAPIError("Listing volumes", err)
 				}
@@ -361,6 +380,7 @@ func volumeCmd(env *Env) *cobra.Command {
 			})
 		},
 	}
+	addGroupingFlags(list, &volTags, &volProject, "volumes")
 	cmd.AddCommand(list, deleteCmd(env, deleteSpec{
 		kind: "volume", operation: "volumeDelete",
 		extra: "The data on it is not recoverable, and volumes are excluded from server backups.",
@@ -389,7 +409,9 @@ func volumeCmd(env *Env) *cobra.Command {
 
 func networkCmd(env *Env) *cobra.Command {
 	cmd := &cobra.Command{Use: "network", Aliases: []string{"networks", "net"}, Short: "Private networks"}
-	cmd.AddCommand(&cobra.Command{
+	var netTags []string
+	var netProject string
+	netList := &cobra.Command{
 		Use: "list", Aliases: []string{"ls"}, Short: "List private networks", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := env.need(); err != nil {
@@ -397,8 +419,15 @@ func networkCmd(env *Env) *cobra.Command {
 			}
 			ctx, cancel := env.ctxWithTimeout(cmd.Context())
 			defer cancel()
+			var netOpts []firstboot.NetworkListOption
+			if len(netTags) > 0 {
+				netOpts = append(netOpts, firstboot.NetworksWithTags(netTags...))
+			}
+			if netProject != "" {
+				netOpts = append(netOpts, firstboot.NetworksInProject(netProject))
+			}
 			var out []fbapi.NetworkBody
-			for n, err := range env.Client.Networks(ctx) {
+			for n, err := range env.Client.Networks(ctx, netOpts...) {
 				if err != nil {
 					return classifyAPIError("Listing networks", err)
 				}
@@ -413,7 +442,9 @@ func networkCmd(env *Env) *cobra.Command {
 				return t
 			})
 		},
-	})
+	}
+	addGroupingFlags(netList, &netTags, &netProject, "private networks")
+	cmd.AddCommand(netList)
 	return cmd
 }
 
@@ -464,7 +495,9 @@ func firewallCmd(env *Env) *cobra.Command {
 
 func loadBalancerCmd(env *Env) *cobra.Command {
 	cmd := &cobra.Command{Use: "lb", Aliases: []string{"load-balancer", "load-balancers"}, Short: "Load balancers"}
-	cmd.AddCommand(&cobra.Command{
+	var lbTags []string
+	var lbProject string
+	lbList := &cobra.Command{
 		Use: "list", Aliases: []string{"ls"}, Short: "List load balancers", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := env.need(); err != nil {
@@ -472,8 +505,15 @@ func loadBalancerCmd(env *Env) *cobra.Command {
 			}
 			ctx, cancel := env.ctxWithTimeout(cmd.Context())
 			defer cancel()
+			var lbOpts []firstboot.LoadBalancerListOption
+			if len(lbTags) > 0 {
+				lbOpts = append(lbOpts, firstboot.LoadBalancersWithTags(lbTags...))
+			}
+			if lbProject != "" {
+				lbOpts = append(lbOpts, firstboot.LoadBalancersInProject(lbProject))
+			}
 			var out []fbapi.LoadBalancerBody
-			for lb, err := range env.Client.LoadBalancers(ctx) {
+			for lb, err := range env.Client.LoadBalancers(ctx, lbOpts...) {
 				if err != nil {
 					return classifyAPIError("Listing load balancers", err)
 				}
@@ -491,7 +531,9 @@ func loadBalancerCmd(env *Env) *cobra.Command {
 				return t
 			})
 		},
-	})
+	}
+	addGroupingFlags(lbList, &lbTags, &lbProject, "load balancers")
+	cmd.AddCommand(lbList)
 	return cmd
 }
 
@@ -537,6 +579,8 @@ func floatingIPCmd(env *Env) *cobra.Command {
 func dnsCmd(env *Env) *cobra.Command {
 	cmd := &cobra.Command{Use: "dns", Short: "DNS zones and records"}
 
+	var zoneTags []string
+	var zoneProject string
 	zones := &cobra.Command{
 		Use: "zones", Aliases: []string{"zone"}, Short: "List DNS zones", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -545,16 +589,19 @@ func dnsCmd(env *Env) *cobra.Command {
 			}
 			ctx, cancel := env.ctxWithTimeout(cmd.Context())
 			defer cancel()
-			resp, err := env.Client.API.DnsZonesListWithResponse(ctx, &fbapi.DnsZonesListParams{})
-			if err != nil {
-				return classifyAPIError("Listing DNS zones", err)
+			var zoneOpts []firstboot.ZoneListOption
+			if len(zoneTags) > 0 {
+				zoneOpts = append(zoneOpts, firstboot.ZonesWithTags(zoneTags...))
 			}
-			if resp.JSON200 == nil {
-				return apiErr("Listing DNS zones", resp.StatusCode(), resp.ApplicationproblemJSONDefault, resp.HTTPResponse)
+			if zoneProject != "" {
+				zoneOpts = append(zoneOpts, firstboot.ZonesInProject(zoneProject))
 			}
 			var out []fbapi.DnsZoneBody
-			if resp.JSON200.Zones != nil {
-				out = *resp.JSON200.Zones
+			for z, err := range env.Client.Zones(ctx, zoneOpts...) {
+				if err != nil {
+					return classifyAPIError("Listing DNS zones", err)
+				}
+				out = append(out, z)
 			}
 			return env.Printer.Print(out, func() Table {
 				t := Table{Headers: []string{"name", "id"}, Empty: "No DNS zones."}
@@ -595,6 +642,7 @@ func dnsCmd(env *Env) *cobra.Command {
 		},
 	}
 
+	addGroupingFlags(zones, &zoneTags, &zoneProject, "DNS zones")
 	cmd.AddCommand(zones, records)
 	return cmd
 }
@@ -603,7 +651,9 @@ func dnsCmd(env *Env) *cobra.Command {
 
 func domainCmd(env *Env) *cobra.Command {
 	cmd := &cobra.Command{Use: "domain", Aliases: []string{"domains"}, Short: "Domain registrations"}
-	cmd.AddCommand(&cobra.Command{
+	var domTags []string
+	var domProject string
+	domList := &cobra.Command{
 		Use: "list", Aliases: []string{"ls"}, Short: "List domains", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := env.need(); err != nil {
@@ -611,8 +661,15 @@ func domainCmd(env *Env) *cobra.Command {
 			}
 			ctx, cancel := env.ctxWithTimeout(cmd.Context())
 			defer cancel()
+			var domOpts []firstboot.DomainListOption
+			if len(domTags) > 0 {
+				domOpts = append(domOpts, firstboot.DomainsWithTags(domTags...))
+			}
+			if domProject != "" {
+				domOpts = append(domOpts, firstboot.DomainsInProject(domProject))
+			}
 			var out []fbapi.DomainBody
-			for d, err := range env.Client.Domains(ctx) {
+			for d, err := range env.Client.Domains(ctx, domOpts...) {
 				if err != nil {
 					return classifyAPIError("Listing domains", err)
 				}
@@ -636,7 +693,9 @@ func domainCmd(env *Env) *cobra.Command {
 				return t
 			})
 		},
-	})
+	}
+	addGroupingFlags(domList, &domTags, &domProject, "domains")
+	cmd.AddCommand(domList)
 	return cmd
 }
 

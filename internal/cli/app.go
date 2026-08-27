@@ -25,7 +25,9 @@ func appCmd(env *Env) *cobra.Command {
 }
 
 func appListCmd(env *Env) *cobra.Command {
-	return &cobra.Command{
+	var tags []string
+	var project string
+	c := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List apps",
@@ -36,16 +38,19 @@ func appListCmd(env *Env) *cobra.Command {
 			}
 			ctx, cancel := env.ctxWithTimeout(cmd.Context())
 			defer cancel()
-			resp, err := env.Client.API.AppsListWithResponse(ctx, &fbapi.AppsListParams{})
-			if err != nil {
-				return classifyAPIError("Listing apps", err)
+			var opts []firstboot.AppListOption
+			if len(tags) > 0 {
+				opts = append(opts, firstboot.AppsWithTags(tags...))
 			}
-			if resp.JSON200 == nil {
-				return apiErr("Listing apps", resp.StatusCode(), resp.ApplicationproblemJSONDefault, resp.HTTPResponse)
+			if project != "" {
+				opts = append(opts, firstboot.AppsInProject(project))
 			}
 			var apps []fbapi.AppBody
-			if resp.JSON200.Apps != nil {
-				apps = *resp.JSON200.Apps
+			for a, err := range env.Client.Apps(ctx, opts...) {
+				if err != nil {
+					return classifyAPIError("Listing apps", err)
+				}
+				apps = append(apps, a)
 			}
 			return env.Printer.Print(apps, func() Table {
 				t := Table{
@@ -63,6 +68,8 @@ func appListCmd(env *Env) *cobra.Command {
 			})
 		},
 	}
+	addGroupingFlags(c, &tags, &project, "apps")
+	return c
 }
 
 func appGetCmd(env *Env) *cobra.Command {

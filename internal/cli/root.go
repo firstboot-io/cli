@@ -124,6 +124,7 @@ profiles. Start with:
 		domainCmd(env),
 		sshKeyCmd(env),
 		projectCmd(env),
+		tagCmd(env),
 		isoCmd(env),
 		walletCmd(env),
 		accountCmd(env),
