@@ -12,7 +12,7 @@ package main
 import (
 	"os"
 
-	"github.com/firstboot-io/firstboot-cli/internal/cli"
+	"github.com/firstboot-io/cli/internal/cli"
 )
 
 // version is stamped by the release build.

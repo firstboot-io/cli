@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	firstboot "github.com/firstboot-io/firstboot-go"
+	firstboot "github.com/firstboot-io/go-sdk"
 )
 
 // Exit codes, because a CLI is also a program.

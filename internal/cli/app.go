@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	firstboot "github.com/firstboot-io/firstboot-go"
-	"github.com/firstboot-io/firstboot-go/fbapi"
+	firstboot "github.com/firstboot-io/go-sdk"
+	"github.com/firstboot-io/go-sdk/fbapi"
 	"github.com/spf13/cobra"
 )
 

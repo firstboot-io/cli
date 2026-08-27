@@ -9,7 +9,7 @@ import (
 	"strings"
 	"syscall"
 
-	firstboot "github.com/firstboot-io/firstboot-go"
+	firstboot "github.com/firstboot-io/go-sdk"
 	"golang.org/x/term"
 )
 

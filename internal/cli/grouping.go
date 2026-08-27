@@ -10,8 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	firstboot "github.com/firstboot-io/firstboot-go"
-	"github.com/firstboot-io/firstboot-go/fbapi"
+	firstboot "github.com/firstboot-io/go-sdk"
+	"github.com/firstboot-io/go-sdk/fbapi"
 )
 
 // Grouping in the CLI: `--tag` and `--project` on every list that has them, and

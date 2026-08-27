@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	firstboot "github.com/firstboot-io/firstboot-go"
+	firstboot "github.com/firstboot-io/go-sdk"
 	"github.com/spf13/cobra"
 )
 

@@ -1,15 +1,15 @@
-module github.com/firstboot-io/firstboot-cli
+module github.com/firstboot-io/cli
 
 go 1.25.7
 
-// firstboot-go is not published yet; it is checked out as a sibling of this
+// The SDK is not published yet; it is checked out as a sibling of this
 // repository, exactly as the workspace layout describes. Remove this the day
 // the SDK carries a tag.
-replace github.com/firstboot-io/firstboot-go => ../go-sdk
+replace github.com/firstboot-io/go-sdk => ../go-sdk
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/firstboot-io/firstboot-go v0.0.0-00010101000000-000000000000
+	github.com/firstboot-io/go-sdk v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.10.2
 	github.com/zalando/go-keyring v0.2.8
