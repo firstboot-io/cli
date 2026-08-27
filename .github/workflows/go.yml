@@ -30,22 +30,6 @@ jobs:
           token: ${{ secrets.PLATFORM_READ_TOKEN }}
       - uses: actions/setup-go@v5
         with: {go-version: '1.25', check-latest: true}
-      # The SDK is a released module now rather than a sibling checkout. It is
-      # still a private repository, so the fetch goes straight to GitHub with a
-      # token; the day the repositories go public this step does nothing and the
-      # proxy and checksum database take over.
-      - name: reach the SDK module
-        env:
-          SDK_READ_TOKEN: ${{ secrets.SDK_READ_TOKEN }}
-        run: |
-          if [ -n "$SDK_READ_TOKEN" ]; then
-            git config --global \
-              url."https://x-access-token:${SDK_READ_TOKEN}@github.com/firstboot-io/".insteadOf \
-              "https://github.com/firstboot-io/"
-            echo "GOPRIVATE=github.com/firstboot-io/*" >> "$GITHUB_ENV"
-          else
-            echo "no SDK_READ_TOKEN set; fetching the SDK as a public module"
-          fi
       - working-directory: cli
         run: go build ./...
       - working-directory: cli

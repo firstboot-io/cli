@@ -171,15 +171,7 @@ go test ./...
 ```
 
 The SDK is consumed as a released module (`github.com/firstboot-io/go-sdk`),
-not as a sibling checkout: the `replace` directive is gone. While that
-repository is private the module proxy cannot serve it, so a build needs
-
-```
-go env -w GOPRIVATE='github.com/firstboot-io/*'
-git config --global url."git@github.com:firstboot-io/".insteadOf "https://github.com/firstboot-io/"
-```
-
-once, and nothing after the repositories go public.
+not as a sibling checkout: the `replace` directive is gone.
 
 `confirm_test.go` reads `../platform/api/openapi/openapi.json`. Without the
 platform checked out beside this repository that test SKIPS, which is why CI
