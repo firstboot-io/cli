@@ -10,10 +10,20 @@ project_name: firstboot
 before:
   hooks:
     - go mod tidy
+    # Completions are generated here rather than at install time. The formula
+    # used to run the installed binary to produce them, which worked only on a
+    # machine that had already logged in; on any other it wrote an error message
+    # into the completion file. Generating them from the source, once, is the
+    # version that cannot depend on the state of the machine installing it.
+    - rm -rf completions
+    - mkdir -p completions
+    - sh -c 'go run ./cmd/firstboot completion bash > completions/firstboot.bash'
+    - sh -c 'go run ./cmd/firstboot completion zsh  > completions/firstboot.zsh'
+    - sh -c 'go run ./cmd/firstboot completion fish > completions/firstboot.fish'
 
 builds:
   - id: firstboot
-    main: .
+    main: ./cmd/firstboot
     binary: firstboot
     env:
       # No cgo, so the binary runs on any glibc and inside a scratch container.
@@ -30,7 +40,7 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
-    files: [README.md, LICENSE]
+    files: [README.md, LICENSE, completions/*]
 
 # .deb and .rpm, because a server that runs this in CI installs software with a
 # package manager rather than by unpacking a tarball into /usr/local.
@@ -40,20 +50,43 @@ nfpms:
     formats: [deb, rpm]
     maintainer: Firstboot <support@firstboot.io> # check-brand:allow package metadata
     description: Manage Firstboot cloud resources from the terminal
-    license: MIT
+    license: Apache-2.0
     bindir: /usr/bin
+    contents:
+      - src: completions/firstboot.bash
+        dst: /usr/share/bash-completion/completions/firstboot
+      - src: completions/firstboot.zsh
+        dst: /usr/share/zsh/site-functions/_firstboot
+      - src: completions/firstboot.fish
+        dst: /usr/share/fish/vendor_completions.d/firstboot.fish
 
-brews:
+# A cask rather than a formula, because goreleaser deprecated formulae for
+# binaries. `brew install firstboot-io/tap/firstboot` is unchanged by that, and
+# the generated cask still carries the Linux archives.
+homebrew_casks:
   - name: firstboot
+    binaries: [firstboot]
     repository:
       owner: firstboot-io
       name: homebrew-tap
-    directory: Formula
+      # A token with write access to the tap repository. The release runs in
+      # this repository, so the default GITHUB_TOKEN cannot reach that one.
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
     homepage: https://firstboot.io # check-brand:allow package metadata
     description: Manage Firstboot cloud resources from the terminal
-    install: |
-      bin.install "firstboot"
-      generate_completions_from_executable(bin/"firstboot", "completion")
+    completions:
+      bash: completions/firstboot.bash
+      zsh: completions/firstboot.zsh
+      fish: completions/firstboot.fish
+    hooks:
+      post:
+        # The binary is not notarised, so Gatekeeper quarantines it and the
+        # first run dies with a dialog rather than an error anybody can read.
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/firstboot"]
+          end
 
 checksum:
   name_template: checksums.txt

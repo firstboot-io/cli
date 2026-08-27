@@ -6,7 +6,16 @@ The command-line interface for the Firstboot cloud platform.
 brew install firstboot-io/tap/firstboot
 ```
 
-or a `.deb`, `.rpm` or a static binary from the releases page.
+or a `.deb`, `.rpm` or a static binary from the releases page, or from source:
+
+```
+go install github.com/firstboot-io/cli/cmd/firstboot@latest
+```
+
+The command lives under `cmd/firstboot` for that last line's sake. A `main` at
+the repository root would install as `cli`, because `go install` names the binary
+after the directory it found it in and this repository is named for what it
+holds rather than for what it produces.
 
 ```
 firstboot auth login
@@ -161,11 +170,39 @@ go build ./...
 go test ./...
 ```
 
-The SDK is consumed from the sibling checkout through a `replace` directive
-until it is published, and `confirm_test.go` reads
-`../platform/api/openapi/openapi.json`. Without the platform beside this
-repository that test SKIPS, which is why CI checks out both and then fails if the
-skip happened.
+The SDK is consumed as a released module (`github.com/firstboot-io/go-sdk`),
+not as a sibling checkout: the `replace` directive is gone. While that
+repository is private the module proxy cannot serve it, so a build needs
+
+```
+go env -w GOPRIVATE='github.com/firstboot-io/*'
+git config --global url."git@github.com:firstboot-io/".insteadOf "https://github.com/firstboot-io/"
+```
+
+once, and nothing after the repositories go public.
+
+`confirm_test.go` reads `../platform/api/openapi/openapi.json`. Without the
+platform checked out beside this repository that test SKIPS, which is why CI
+checks it out and then fails if the skip happened.
+
+## Releasing
+
+```
+git tag -a v0.1.0 -m v0.1.0 && git push origin v0.1.0
+```
+
+`.github/workflows/release.yml` runs goreleaser on the tag and produces every
+way to install it at once: archives for five targets, a `.deb` and a `.rpm`, and
+a formula pushed to `firstboot-io/homebrew-tap`.
+
+Two secrets, both one-time. `HOMEBREW_TAP_TOKEN` needs write access to the tap
+repository, because the default `GITHUB_TOKEN` is scoped to this one and cannot
+push a formula anywhere else. `SDK_READ_TOKEN` needs read access to
+`firstboot-io/go-sdk` while that repository is private, and becomes unnecessary
+when it is not.
+
+The tap has to be public before `brew install firstboot-io/tap/firstboot` works
+for anybody: Homebrew clones it anonymously.
 
 ## Requirements
 

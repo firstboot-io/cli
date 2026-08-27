@@ -131,6 +131,22 @@ profiles. Start with:
 	)
 	root.SetVersionTemplate("firstboot {{.Version}}\n")
 
+	// Cobra generates `completion` and `help` itself, and neither can want a
+	// token: `brew install` runs `firstboot completion zsh` on a machine that
+	// has never logged in, and it would have installed a completion file
+	// containing an error message. They are created here rather than during
+	// Execute so that the annotation can be put on them.
+	root.InitDefaultCompletionCmd()
+	root.InitDefaultHelpCmd()
+	for _, name := range []string{"completion", "help"} {
+		if c, _, err := root.Find([]string{name}); err == nil && c != root {
+			if c.Annotations == nil {
+				c.Annotations = map[string]string{}
+			}
+			c.Annotations["client"] = "none"
+		}
+	}
+
 	ctx, stop := signalContext()
 	defer stop()
 
@@ -139,6 +155,19 @@ profiles. Start with:
 		return ExitOK
 	}
 	return report(env, err, ctx)
+}
+
+// clientNone reports whether a command opted out of the API client, and so has
+// everything under it. The walk up the parents is what makes `completion zsh`
+// inherit the annotation put on `completion`: cobra generates those children
+// itself, so there is nowhere to annotate them one by one.
+func clientNone(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		if c.Annotations["client"] == "none" {
+			return true
+		}
+	}
+	return false
 }
 
 // setup fills the Env. Commands that do not need a client say so with an
@@ -163,7 +192,7 @@ func setup(cmd *cobra.Command, g *globals, env *Env) error {
 	}
 	env.Config = cfg
 
-	if cmd.Annotations["client"] == "none" {
+	if clientNone(cmd) {
 		return nil
 	}
 

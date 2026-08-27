@@ -1,0 +1,43 @@
+name: release
+
+# A tag is the whole trigger. Everything a person can install --- the archives,
+# the .deb and .rpm, the Homebrew formula --- is built from the tagged commit by
+# this job, so "released" means one thing rather than depending on which machine
+# ran goreleaser.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # goreleaser builds the changelog from the commits since the previous
+          # tag, and a shallow clone has none of them.
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with: {go-version: '1.25'}
+      - name: reach the SDK module
+        env:
+          SDK_READ_TOKEN: ${{ secrets.SDK_READ_TOKEN }}
+        run: |
+          if [ -n "$SDK_READ_TOKEN" ]; then
+            git config --global \
+              url."https://x-access-token:${SDK_READ_TOKEN}@github.com/firstboot-io/".insteadOf \
+              "https://github.com/firstboot-io/"
+            echo "GOPRIVATE=github.com/firstboot-io/*" >> "$GITHUB_ENV"
+          fi
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Write access to firstboot-io/homebrew-tap, which the default token
+          # does not have: it is scoped to this repository.
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
