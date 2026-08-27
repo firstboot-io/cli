@@ -23,7 +23,10 @@ jobs:
       # confirmation test reads `../../../platform/api/openapi/openapi.json`.
       - uses: actions/checkout@v4
         with: {path: cli}
-      - uses: actions/checkout@v4
+      # The platform is private, and GitHub hands no secret to a run triggered
+      # by a fork's pull request, so it cannot be checked out there.
+      - if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/checkout@v4
         with:
           repository: firstboot-io/platform
           path: platform
@@ -39,6 +42,7 @@ jobs:
       # A skipped scope test passes, and a suite that checked nothing is exactly
       # the failure this test exists to prevent.
       - name: the confirmation test actually ran
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         working-directory: cli
         run: |
           out=$(go test -run 'TestConfirmationSetMatchesTheDestroyScope' -v ./internal/cli/ 2>&1)
