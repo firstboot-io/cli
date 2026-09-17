@@ -118,12 +118,13 @@ to jq, a script or a CI step.
 			}
 			if state != "" {
 				switch state {
-				case "running", "stopped", "other":
+				case "running", "stopped", "busy", "error", "suspended", "other":
 					opts = append(opts, firstboot.ServersInState(fbapi.ServersListParamsState(state)))
 				default:
 					return failf(ExitUsage, "",
-						"--state takes running, stopped or other. It is a BUCKET rather than a "+
-							"state value, so it cannot take error_provisioning")
+						"--state takes running, stopped, busy, error, suspended or other. It is a "+
+							"BUCKET rather than a state value, so it cannot take error_provisioning: "+
+							"use error for every failed state")
 				}
 			}
 			if project != "" {
@@ -163,7 +164,8 @@ to jq, a script or a CI step.
 	}
 	f := cmd.Flags()
 	f.StringVar(&search, "search", "", "match a name, IP address or image, partially")
-	f.StringVar(&state, "state", "", "running, stopped or other")
+	f.StringVar(&state, "state", "",
+		"running, stopped, busy (work in flight), error, suspended, or other (busy, error and suspended together)")
 	f.StringVar(&project, "project", "", "only servers in this project, or `none`")
 	f.StringArrayVar(&tags, "tag", nil,
 		"only servers carrying this tag; repeat the flag to require several")
